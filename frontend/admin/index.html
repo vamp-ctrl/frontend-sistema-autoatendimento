@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --acai: #5B2D8E; --acai-bg: #F5F0FF;
+  --pizza: #C8401A; --pizza-bg: #FFF5F2;
+  --white: #fff; --bg: #F2F3F7;
+  --g100: #F3F4F6; --g200: #E5E7EB; --g300: #D1D5DB;
+  --g400: #9CA3AF; --g500: #6B7280; --g600: #4B5563; --g900: #111827;
+  --green: #059669; --green-bg: #D1FAE5;
+  --yellow: #D97706; --yellow-bg: #FEF3C7;
+  --red: #DC2626; --red-bg: #FEE2E2;
+  --sidebar: 224px; --r: 12px; --sh: 0 2px 12px rgba(0,0,0,0.07);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--g900);display:flex;min-height:100vh;}
+button{cursor:pointer;font-family:inherit;}
+input,select,textarea{font-family:inherit;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:var(--sidebar);background:var(--g900);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50;}
+.sb-logo{padding:22px 18px;font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:#fff;border-bottom:1px solid rgba(255,255,255,0.08);}
+.sb-logo span{display:block;font-size:11px;font-weight:400;color:var(--g400);letter-spacing:.05em;text-transform:uppercase;margin-top:3px;}
+.sb-nav{padding:14px 10px;flex:1;display:flex;flex-direction:column;gap:3px;overflow-y:auto;}
+.sb-group{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--g400);padding:10px 10px 4px;}
+.nav-btn{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:8px;border:none;background:none;text-align:left;width:100%;font-size:13px;font-weight:500;color:var(--g400);transition:all .15s;}
+.nav-btn:hover{background:rgba(255,255,255,0.06);color:#fff;}
+.nav-btn.on{background:rgba(255,255,255,0.12);color:#fff;}
+.nav-btn svg{width:16px;height:16px;flex-shrink:0;}
+.sb-foot{padding:14px 18px;border-top:1px solid rgba(255,255,255,0.08);font-size:12px;color:var(--g400);}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--g500);margin-right:6px;transition:background .3s;}
+.dot.ok{background:#10B981;}
+
+/* ── MAIN ── */
+.main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;}
+.topbar{background:var(--white);padding:14px 26px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--g200);position:sticky;top:0;z-index:40;}
+.tb-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;}
+.tb-date{font-size:13px;color:var(--g400);}
+.content{padding:26px;flex:1;}
+
+/* ── PAGES ── */
+.page{display:none;}
+.page.on{display:block;animation:fadeUp .2s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── STATS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:26px;}
+.stat-card{background:var(--white);border-radius:var(--r);padding:18px;box-shadow:var(--sh);}
+.stat-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--g400);margin-bottom:7px;}
+.stat-value{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--g900);}
+.stat-sub{font-size:12px;color:var(--g400);margin-top:3px;}
+
+/* ── TABS ── */
+.filter-tabs{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap;}
+.ftab{padding:7px 16px;border:none;border-radius:100px;font-size:13px;font-weight:600;background:var(--g200);color:var(--g600);transition:all .12s;}
+.ftab.on{background:var(--g900);color:#fff;}
+
+/* ── PEDIDOS GRID ── */
+.pedidos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+.pedido-card{background:var(--white);border-radius:var(--r);padding:18px;box-shadow:var(--sh);border-left:4px solid var(--g300);}
+.pedido-card.aguardando{border-left-color:var(--yellow);}
+.pedido-card.preparando{border-left-color:#3B82F6;}
+.pedido-card.pronto{border-left-color:var(--green);}
+.pedido-card.entregue{border-left-color:var(--g300);}
+.pc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.pc-num{font-family:'Syne',sans-serif;font-weight:800;font-size:15px;}
+.pc-tipo{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;padding:3px 8px;border-radius:100px;}
+.pc-tipo.p{background:var(--pizza-bg);color:var(--pizza);}
+.pc-tipo.a{background:var(--acai-bg);color:var(--acai);}
+.pc-meta{font-size:12px;color:var(--g500);margin-bottom:12px;}
+.pc-itens{font-size:13px;color:var(--g600);margin-bottom:12px;line-height:1.6;}
+.pc-bottom{display:flex;align-items:center;justify-content:space-between;}
+.pc-total{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;}
+.pc-status-sel{padding:6px 10px;border:1.5px solid var(--g300);border-radius:8px;font-size:12px;font-weight:600;background:var(--white);color:var(--g700);}
+.pc-actions{display:flex;gap:6px;margin-top:10px;}
+.pc-btn{padding:6px 12px;border:none;border-radius:8px;font-size:12px;font-weight:600;transition:all .12s;}
+.pc-btn.pagar{background:var(--green-bg);color:var(--green);}
+.pc-btn.reimp{background:var(--g100);color:var(--g600);}
+.pc-btn:active{opacity:.75;}
+
+/* ── CARDÁPIO ── */
+.cardapio-grid{display:grid;gap:24px;}
+.card-section{background:var(--white);border-radius:var(--r);padding:20px;box-shadow:var(--sh);}
+.cs-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.cs-title{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;}
+.btn-add{padding:8px 16px;border:none;border-radius:8px;font-size:13px;font-weight:600;background:var(--g900);color:#fff;transition:opacity .12s;}
+.btn-add:active{opacity:.8;}
+.card-table{width:100%;border-collapse:collapse;font-size:13px;}
+.card-table th{text-align:left;padding:8px 10px;border-bottom:2px solid var(--g200);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--g400);}
+.card-table td{padding:10px 10px;border-bottom:1px solid var(--g100);vertical-align:middle;}
+.card-table tr:last-child td{border-bottom:none;}
+.card-table tr:hover td{background:var(--bg);}
+.badge-on{display:inline-block;padding:2px 8px;border-radius:100px;font-size:11px;font-weight:600;background:var(--green-bg);color:var(--green);}
+.badge-off{display:inline-block;padding:2px 8px;border-radius:100px;font-size:11px;font-weight:600;background:var(--g100);color:var(--g500);}
+.tbl-actions{display:flex;gap:6px;}
+.tbl-btn{padding:5px 11px;border:none;border-radius:7px;font-size:12px;font-weight:600;transition:all .12s;}
+.tbl-btn.edit{background:var(--g100);color:var(--g700);}
+.tbl-btn.del{background:var(--red-bg);color:var(--red);}
+.tbl-btn:active{opacity:.75;}
+.toggle-btn{padding:4px 10px;border:none;border-radius:100px;font-size:11px;font-weight:600;cursor:pointer;transition:all .12s;}
+.toggle-btn.on{background:var(--green-bg);color:var(--green);}
+.toggle-btn.off{background:var(--g100);color:var(--g500);}
+
+/* ── RELATÓRIO ── */
+.rel-header{display:flex;gap:10px;margin-bottom:20px;align-items:center;}
+.rel-input{padding:8px 12px;border:1.5px solid var(--g300);border-radius:8px;font-size:13px;}
+.rel-search{padding:8px 16px;border:none;border-radius:8px;background:var(--g900);color:#fff;font-size:13px;font-weight:600;}
+.rel-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:20px;}
+.rel-card{background:var(--white);border-radius:var(--r);padding:16px;box-shadow:var(--sh);}
+.rel-card.dest{border:2px solid var(--g900);}
+.rel-card-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--g400);margin-bottom:6px;}
+.rel-card-value{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;}
+.table-wrap{overflow-x:auto;background:var(--white);border-radius:var(--r);box-shadow:var(--sh);}
+.data-table{width:100%;border-collapse:collapse;font-size:13px;}
+.data-table th{text-align:left;padding:10px 14px;border-bottom:2px solid var(--g200);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--g400);}
+.data-table td{padding:12px 14px;border-bottom:1px solid var(--g100);}
+.data-table tr:last-child td{border-bottom:none;}
+
+/* ── HISTÓRICO ── */
+.hist-item{background:var(--white);border-radius:var(--r);padding:16px 20px;box-shadow:var(--sh);display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;cursor:pointer;}
+.hist-item:hover{background:var(--bg);}
+.hist-date{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;}
+.hist-meta{font-size:13px;color:var(--g500);margin-top:2px;}
+.hist-fat{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:var(--green);}
+
+/* ── MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:999;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.show{display:flex;}
+.modal{background:var(--white);border-radius:16px;padding:24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;}
+.modal-title{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;margin-bottom:20px;}
+.form-row{margin-bottom:14px;}
+.form-label{display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--g500);margin-bottom:5px;}
+.form-input{width:100%;padding:10px 12px;border:1.5px solid var(--g300);border-radius:8px;font-size:14px;outline:none;transition:border-color .12s;}
+.form-input:focus{border-color:var(--g900);}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-check{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;}
+.form-check input[type=checkbox]{width:16px;height:16px;accent-color:var(--g900);}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--g200);}
+.modal-cancel{padding:9px 18px;border:1.5px solid var(--g300);border-radius:8px;background:var(--white);font-size:13px;font-weight:600;color:var(--g600);}
+.modal-confirm{padding:9px 18px;border:none;border-radius:8px;background:var(--g900);color:#fff;font-size:13px;font-weight:600;}
+
+/* ── PAGAMENTO MODAL ── */
+.forma-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;}
+.forma-btn{padding:12px;border:2px solid var(--g200);border-radius:10px;background:var(--white);font-size:14px;font-weight:600;color:var(--g700);transition:all .12s;}
+.forma-btn.on{border-color:var(--g900);background:var(--g900);color:#fff;}
+.troco-row{display:flex;gap:8px;}
+.troco-btn{flex:1;padding:10px;border:2px solid var(--g200);border-radius:8px;background:var(--white);font-size:13px;font-weight:600;color:var(--g600);transition:all .12s;}
+.troco-btn.on{border-color:var(--g900);background:var(--g900);color:#fff;}
+
+/* ── NOTIF ── */
+.notif{position:fixed;bottom:24px;right:24px;background:var(--g900);color:#fff;border-radius:14px;padding:14px 18px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,0.2);transform:translateY(120px);transition:transform .3s;z-index:9999;max-width:320px;}
+.notif.show{transform:translateY(0);}
+.notif-icon{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.notif-icon svg{width:18px;height:18px;}
+.notif-title{font-family:'Syne',sans-serif;font-weight:800;font-size:14px;}
+.notif-body{font-size:12px;color:rgba(255,255,255,0.7);margin-top:2px;}
+</style>
+</head>
+<body>
+
+<!-- ══ SIDEBAR ══ -->
+<aside class="sidebar">
+  <div class="sb-logo">Painel Admin <span>Autoatendimento</span></div>
+  <nav class="sb-nav">
+    <div class="sb-group">Operação</div>
+    <button class="nav-btn on" id="nb-pedidos" onclick="navTo('pedidos')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      Pedidos do Dia
+    </button>
+    <button class="nav-btn" id="nb-relatorio" onclick="navTo('relatorio')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><polyline points="18 9 13 14 8 11 3 16"/></svg>
+      Relatório
+    </button>
+    <button class="nav-btn" id="nb-historico" onclick="navTo('historico')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Histórico
+    </button>
+
+    <div class="sb-group">Cardápio</div>
+    <button class="nav-btn" id="nb-cardapio-acai" onclick="navTo('cardapio-acai')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2h8l1 5H7z"/><path d="M7 7l1 15h8l1-15"/></svg>
+      Açaiteria
+    </button>
+    <button class="nav-btn" id="nb-cardapio-pizza" onclick="navTo('cardapio-pizza')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3C7 3 3 7 3 12h18C21 7 17 3 12 3z"/><path d="M3 12l9 9 9-9"/></svg>
+      Pizzaria
+    </button>
+    <button class="nav-btn" id="nb-cardapio-bebidas" onclick="navTo('cardapio-bebidas')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2h8l1 4H7z"/><path d="M7 6l1 14h8l1-14"/><path d="M10 10c0 1.1.9 2 2 2s2-.9 2-2"/></svg>
+      Bebidas
+    </button>
+  </nav>
+  <div class="sb-foot"><span class="dot" id="dot"></span><span id="conn-txt">Desconectado</span></div>
+</aside>
+
+<!-- ══ MAIN ══ -->
+<main class="main">
+  <div class="topbar">
+    <div class="tb-title" id="tb-title">Pedidos do Dia</div>
+    <div class="tb-date" id="tb-date"></div>
+  </div>
+  <div class="content">
+
+    <!-- ── PEDIDOS ── -->
+    <div id="page-pedidos" class="page on">
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Total Pedidos</div><div class="stat-value" id="s-total">0</div></div>
+        <div class="stat-card"><div class="stat-label">Aguardando</div><div class="stat-value" id="s-aguardando" style="color:var(--yellow)">0</div></div>
+        <div class="stat-card"><div class="stat-label">Preparando</div><div class="stat-value" id="s-preparando" style="color:#3B82F6">0</div></div>
+        <div class="stat-card"><div class="stat-label">Faturamento</div><div class="stat-value" id="s-fat">R$ 0</div><div class="stat-sub">pedidos pagos</div></div>
+      </div>
+      <div class="filter-tabs">
+        <button class="ftab on" id="ft-todos"      onclick="filtrar('todos')">Todos</button>
+        <button class="ftab"    id="ft-pizzaria"   onclick="filtrar('pizzaria')">Pizzaria</button>
+        <button class="ftab"    id="ft-acaiteria"  onclick="filtrar('acaiteria')">Açaiteria</button>
+        <button class="ftab"    id="ft-aguardando" onclick="filtrar('aguardando')">Aguardando</button>
+      </div>
+      <div class="pedidos-grid" id="pedidos-grid"></div>
+    </div>
+
+    <!-- ── RELATÓRIO ── -->
+    <div id="page-relatorio" class="page">
+      <div class="rel-header">
+        <input type="date" class="rel-input" id="rel-data">
+        <button class="rel-search" onclick="carregarRelatorio()">Buscar</button>
+      </div>
+      <div class="rel-cards">
+        <div class="rel-card"><div class="rel-card-label">Pedidos</div><div class="rel-card-value" id="r-ped">—</div></div>
+        <div class="rel-card"><div class="rel-card-label">Pix</div><div class="rel-card-value" id="r-pix">—</div></div>
+        <div class="rel-card"><div class="rel-card-label">Crédito</div><div class="rel-card-value" id="r-cred">—</div></div>
+        <div class="rel-card"><div class="rel-card-label">Débito</div><div class="rel-card-value" id="r-deb">—</div></div>
+        <div class="rel-card"><div class="rel-card-label">Dinheiro</div><div class="rel-card-value" id="r-din">—</div></div>
+        <div class="rel-card dest"><div class="rel-card-label">Total Geral</div><div class="rel-card-value" id="r-tot">—</div></div>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Pedido</th><th>Tipo</th><th>Hora</th><th>Pagamento</th><th>Total</th><th>Status</th></tr></thead>
+          <tbody id="rel-body"><tr><td colspan="6" style="text-align:center;color:var(--g400);padding:20px;">Selecione uma data</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── HISTÓRICO ── -->
+    <div id="page-historico" class="page">
+      <div id="hist-list"><div style="color:var(--g400);">Carregando...</div></div>
+    </div>
+
+    <!-- ── CARDÁPIO AÇAÍ ── -->
+    <div id="page-cardapio-acai" class="page">
+      <div class="cardapio-grid">
+        <!-- Tamanhos Açaí -->
+        <div class="card-section">
+          <div class="cs-header">
+            <div class="cs-title">Tamanhos do Copo</div>
+            <button class="btn-add" onclick="abrirModal('tam-acai',null)">+ Adicionar</button>
+          </div>
+          <table class="card-table">
+            <thead><tr><th>Nome</th><th>Volume</th><th>Acomp. Grátis</th><th>Preço</th><th>Status</th><th>Ações</th></tr></thead>
+            <tbody id="tbl-tam-acai"></tbody>
+          </table>
+        </div>
+        <!-- Acompanhamentos -->
+        <div class="card-section">
+          <div class="cs-header">
+            <div class="cs-title">Acompanhamentos</div>
+            <button class="btn-add" onclick="abrirModal('acomp',null)">+ Adicionar</button>
+          </div>
+          <table class="card-table">
+            <thead><tr><th>Nome</th><th>Preço Extra</th><th>Status</th><th>Ações</th></tr></thead>
+            <tbody id="tbl-acomp"></tbody>
+          </table>
+        </div>
+        <!-- Copos Montados -->
+        <div class="card-section">
+          <div class="cs-header">
+            <div class="cs-title">Copos Prontos</div>
+            <button class="btn-add" onclick="abrirModal('copos',null)">+ Adicionar</button>
+          </div>
+          <table class="card-table">
+            <thead><tr><th>Nome</th><th>Descrição</th><th>Preço</th><th>Status</th><th>Ações</th></tr></thead>
+            <tbody id="tbl-copos"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CARDÁPIO PIZZA ── -->
+    <div id="page-cardapio-pizza" class="page">
+      <div class="cardapio-grid">
+        <div class="card-section">
+          <div class="cs-header">
+            <div class="cs-title">Tamanhos</div>
+            <button class="btn-add" onclick="abrirModal('tam-pizza',null)">+ Adicionar</button>
+          </div>
+          <table class="card-table">
+            <thead><tr><th>Nome</th><th>Descrição</th><th>Fatias</th><th>Preço Base</th><th>Status</th><th>Ações</th></tr></thead>
+            <tbody id="tbl-tam-pizza"></tbody>
+          </table>
+        </div>
+        <div class="card-section">
+          <div class="cs-header">
+            <div class="cs-title">Sabores</div>
+            <button class="btn-add" onclick="abrirModal('sabores',null)">+ Adicionar</button>
+          </div>
+          <table class="card-table">
+            <thead><tr><th>Nome</th><th>Categoria</th><th>Descrição</th><th>Status</th><th>Ações</th></tr></thead>
+            <tbody id="tbl-sabores"></tbody>
+          </table>
+        </div>
+        <div class="card-section">
+          <div class="cs-header">
+            <div class="cs-title">Bordas</div>
+            <button class="btn-add" onclick="abrirModal('bordas',null)">+ Adicionar</button>
+          </div>
+          <table class="card-table">
+            <thead><tr><th>Nome</th><th>Preço</th><th>Status</th><th>Ações</th></tr></thead>
+            <tbody id="tbl-bordas"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CARDÁPIO BEBIDAS ── -->
+    <div id="page-cardapio-bebidas" class="page">
+      <div class="cardapio-grid">
+        <div class="card-section">
+          <div class="cs-header">
+            <div class="cs-title">Bebidas</div>
+            <button class="btn-add" onclick="abrirModal('bebidas',null)">+ Adicionar</button>
+          </div>
+          <table class="card-table">
+            <thead><tr><th>Nome</th><th>Categoria</th><th>Descrição</th><th>Preço</th><th>Status</th><th>Ações</th></tr></thead>
+            <tbody id="tbl-bebidas"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- ══ MODAL PAGAMENTO ══ -->
+<div class="modal-overlay" id="modal-pag">
+  <div class="modal">
+    <div class="modal-title">Registrar Pagamento</div>
+    <div id="pag-info" style="background:var(--g100);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--g600);"></div>
+    <div class="form-row">
+      <div class="form-label">Forma de Pagamento</div>
+      <div class="forma-grid">
+        <button class="forma-btn" id="fb-pix"     onclick="selForma('pix')">Pix</button>
+        <button class="forma-btn" id="fb-credito" onclick="selForma('credito')">Crédito</button>
+        <button class="forma-btn" id="fb-debito"  onclick="selForma('debito')">Débito</button>
+        <button class="forma-btn" id="fb-dinheiro" onclick="selForma('dinheiro')">Dinheiro</button>
+      </div>
+    </div>
+    <div id="troco-area" style="display:none;">
+      <div class="form-row">
+        <div class="form-label">Precisa de Troco?</div>
+        <div class="troco-row">
+          <button class="troco-btn" id="tb-sim" onclick="selTroco(true)">Sim</button>
+          <button class="troco-btn" id="tb-nao" onclick="selTroco(false)">Não</button>
+        </div>
+      </div>
+      <div class="form-row" id="vr-group" style="display:none;">
+        <label class="form-label">Valor Recebido (R$)</label>
+        <input type="number" class="form-input" id="vr-input" step="0.01" placeholder="0,00">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-cancel" onclick="fecharModalPag()">Cancelar</button>
+      <button class="modal-confirm" onclick="confirmarPag()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL CARDÁPIO ══ -->
+<div class="modal-overlay" id="modal-card">
+  <div class="modal">
+    <div class="modal-title" id="mc-title">Item</div>
+    <div id="mc-body"></div>
+    <div class="modal-footer">
+      <button class="modal-cancel" onclick="fecharModalCard()">Cancelar</button>
+      <button class="modal-confirm" onclick="salvarItem()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ NOTIFICAÇÃO ══ -->
+<div class="notif" id="notif">
+  <div class="notif-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+  </div>
+  <div>
+    <div class="notif-title" id="notif-title">Novo Pedido</div>
+    <div class="notif-body" id="notif-body"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════ ESTADO ═══════════
+const A = {
+  pagina: 'pedidos', filtro: 'todos',
+  pedidos: [], pedidoIdPag: null,
+  formaSelPag: null, trocoSel: null,
+  // cardápio
+  cardTipo: null, cardItem: null,
+  // dados cardápio
+  dTamAcai: [], dAcomp: [], dCopos: [],
+  dTamPizza: [], dSabores: [], dBordas: [], dBebidas: [],
+};
+
+const $ = id => document.getElementById(id);
+const fmt = v => 'R$ ' + Number(v||0).toFixed(2).replace('.',',');
+function fmtDate(d) { return new Date(d).toLocaleString('pt-BR', { hour:'2-digit', minute:'2-digit' }); }
+
+// ═══════════ DATA ═══════════
+function setDate() {
+  $('tb-date').textContent = new Date().toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long' });
+  $('rel-data').value = new Date().toISOString().slice(0,10);
+}
+
+// ═══════════ NAVEGAÇÃO ═══════════
+const pageTitles = {
+  'pedidos': 'Pedidos do Dia', 'relatorio': 'Relatório',
+  'historico': 'Histórico', 'cardapio-acai': 'Cardápio — Açaiteria',
+  'cardapio-pizza': 'Cardápio — Pizzaria', 'cardapio-bebidas': 'Cardápio — Bebidas',
+};
+
+function navTo(pg) {
+  A.pagina = pg;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('on'));
+  $('page-' + pg).classList.add('on');
+  $('nb-' + pg).classList.add('on');
+  $('tb-title').textContent = pageTitles[pg] || pg;
+
+  if (pg === 'historico') carregarHistorico();
+  if (pg === 'cardapio-acai')    carregarCardapioAcai();
+  if (pg === 'cardapio-pizza')   carregarCardapioPizza();
+  if (pg === 'cardapio-bebidas') carregarCardapioBebidas();
+}
+
+// ═══════════ API ═══════════
+// ⚙️ Altere para a URL do seu backend em produção
+const BASE_URL = window.BACKEND_URL || '';
+
+async function api(url, opts={}) {
+  const r = await fetch(BASE_URL + url, { headers:{'Content-Type':'application/json'}, ...opts });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || 'Erro');
+  return d;
+}
+
+// ═══════════ PEDIDOS ═══════════
+async function carregarPedidos() {
+  try {
+    A.pedidos = await api('/api/pedidos');
+    renderPedidos(); atualizarStats();
+  } catch(e) { console.error(e); }
+}
+
+function renderPedidos() {
+  let lista = A.pedidos;
+  if (A.filtro === 'pizzaria')  lista = lista.filter(p => p.tipo === 'pizzaria');
+  if (A.filtro === 'acaiteria') lista = lista.filter(p => p.tipo === 'acaiteria');
+  if (A.filtro === 'aguardando') lista = lista.filter(p => p.status === 'aguardando');
+
+  if (!lista.length) {
+    $('pedidos-grid').innerHTML = `<div style="color:var(--g400);font-size:14px;">Nenhum pedido encontrado.</div>`;
+    return;
+  }
+
+  $('pedidos-grid').innerHTML = lista.map(p => {
+    const tipoCls = p.tipo === 'pizzaria' ? 'p' : 'a';
+    const tipoNome = p.tipo === 'pizzaria' ? 'Pizza' : 'Açaí';
+    const statusMap = { aguardando:'aguardando', preparando:'preparando', pronto:'pronto', entregue:'entregue' };
+    const pagoBadge = p.pagamento_forma ? `<span class="badge-on">${p.pagamento_forma}</span>` : '';
+    return `
+      <div class="pedido-card ${statusMap[p.status]||''}">
+        <div class="pc-top">
+          <div class="pc-num">${p.numero_pedido}</div>
+          <span class="pc-tipo ${tipoCls}">${tipoNome}</span>
+        </div>
+        <div class="pc-meta">${fmtDate(p.criado_em)} • ${p.tipo_consumo === 'local' ? 'Local' : 'Viagem'} ${pagoBadge}</div>
+        <div class="pc-bottom">
+          <div class="pc-total">${fmt(p.total)}</div>
+          <select class="pc-status-sel" onchange="mudaStatus(${p.id},this.value)">
+            <option value="aguardando" ${p.status==='aguardando'?'selected':''}>Aguardando</option>
+            <option value="preparando" ${p.status==='preparando'?'selected':''}>Preparando</option>
+            <option value="pronto"     ${p.status==='pronto'?'selected':''}>Pronto</option>
+            <option value="entregue"   ${p.status==='entregue'?'selected':''}>Entregue</option>
+            <option value="cancelado"  ${p.status==='cancelado'?'selected':''}>Cancelado</option>
+          </select>
+        </div>
+        <div class="pc-actions">
+          ${!p.pagamento_forma && p.status !== 'cancelado' ? `<button class="pc-btn pagar" onclick="abrirPag(${p.id})">Registrar Pagamento</button>` : ''}
+          <button class="pc-btn reimp" onclick="reimprimir(${p.id})">Reimprimir</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function atualizarStats() {
+  const total = A.pedidos.length;
+  const aguard = A.pedidos.filter(p => p.status === 'aguardando').length;
+  const prepar = A.pedidos.filter(p => p.status === 'preparando').length;
+  const fat = A.pedidos.filter(p => p.pagamento_forma).reduce((s, p) => s + parseFloat(p.total||0), 0);
+  $('s-total').textContent = total;
+  $('s-aguardando').textContent = aguard;
+  $('s-preparando').textContent = prepar;
+  $('s-fat').textContent = fmt(fat);
+}
+
+function filtrar(f) {
+  A.filtro = f;
+  document.querySelectorAll('.ftab').forEach(b => b.classList.remove('on'));
+  $('ft-' + f).classList.add('on');
+  renderPedidos();
+}
+
+async function mudaStatus(id, status) {
+  try {
+    await api(`/api/pedidos/${id}/status`, { method:'PATCH', body: JSON.stringify({ status }) });
+    const idx = A.pedidos.findIndex(p => p.id === id);
+    if (idx >= 0) A.pedidos[idx].status = status;
+    atualizarStats();
+  } catch(e) { alert('Erro: ' + e.message); }
+}
+
+async function reimprimir(id) {
+  try { await api(`/api/pedidos/${id}/reimprimir`, { method:'POST' }); alert('Reimpresso!'); }
+  catch(e) { alert('Erro: ' + e.message); }
+}
+
+// ═══════════ PAGAMENTO ═══════════
+function abrirPag(id) {
+  A.pedidoIdPag = id; A.formaSelPag = null; A.trocoSel = null;
+  const p = A.pedidos.find(x => x.id === id);
+  $('pag-info').innerHTML = `<strong>${p.numero_pedido}</strong> — Total: <strong>${fmt(p.total)}</strong>`;
+  document.querySelectorAll('.forma-btn').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll('.troco-btn').forEach(b => b.classList.remove('on'));
+  $('troco-area').style.display = 'none';
+  $('vr-group').style.display = 'none';
+  $('modal-pag').classList.add('show');
+}
+function fecharModalPag() { $('modal-pag').classList.remove('show'); }
+function selForma(f) {
+  A.formaSelPag = f;
+  document.querySelectorAll('.forma-btn').forEach(b => b.classList.remove('on'));
+  $('fb-' + f).classList.add('on');
+  $('troco-area').style.display = f === 'dinheiro' ? 'block' : 'none';
+  $('vr-group').style.display = 'none';
+}
+function selTroco(sim) {
+  A.trocoSel = sim;
+  $('tb-sim').classList.toggle('on', sim);
+  $('tb-nao').classList.toggle('on', !sim);
+  $('vr-group').style.display = sim ? 'block' : 'none';
+}
+async function confirmarPag() {
+  if (!A.formaSelPag) { alert('Escolha a forma de pagamento'); return; }
+  const body = { forma: A.formaSelPag };
+  if (A.formaSelPag === 'dinheiro' && A.trocoSel) {
+    body.precisa_troco = true;
+    body.valor_recebido = parseFloat($('vr-input').value) || 0;
+  }
+  try {
+    const d = await api(`/api/pedidos/${A.pedidoIdPag}/pagamento`, { method:'POST', body: JSON.stringify(body) });
+    const idx = A.pedidos.findIndex(p => p.id === A.pedidoIdPag);
+    if (idx >= 0) A.pedidos[idx] = { ...A.pedidos[idx], ...d.pedido, pagamento_forma: A.formaSelPag };
+    fecharModalPag(); renderPedidos(); atualizarStats();
+  } catch(e) { alert('Erro: ' + e.message); }
+}
+
+// ═══════════ RELATÓRIO ═══════════
+async function carregarRelatorio() {
+  const data = $('rel-data').value;
+  try {
+    const d = await api('/api/pedidos/relatorio/dia?data=' + data);
+    const r = d.resumo || {};
+    $('r-ped').textContent  = r.total_pedidos || 0;
+    $('r-pix').textContent  = fmt(r.total_pix);
+    $('r-cred').textContent = fmt(r.total_credito);
+    $('r-deb').textContent  = fmt(r.total_debito);
+    $('r-din').textContent  = fmt(r.total_dinheiro);
+    $('r-tot').textContent  = fmt(r.total_geral);
+    $('rel-body').innerHTML = (d.pedidos||[]).map(p => `
+      <tr>
+        <td><strong>${p.numero_pedido}</strong></td>
+        <td>${p.tipo}</td>
+        <td>${fmtDate(p.criado_em)}</td>
+        <td>${p.forma || '—'}</td>
+        <td>${fmt(p.total)}</td>
+        <td>${p.status}</td>
+      </tr>`).join('') || `<tr><td colspan="6" style="text-align:center;color:var(--g400);padding:16px;">Nenhum pedido</td></tr>`;
+  } catch(e) { alert('Erro: ' + e.message); }
+}
+
+// ═══════════ HISTÓRICO ═══════════
+async function carregarHistorico() {
+  try {
+    const rows = await api('/api/pedidos/historico/datas');
+    $('hist-list').innerHTML = rows.map(r => `
+      <div class="hist-item" onclick="verDia('${r.data}')">
+        <div>
+          <div class="hist-date">${new Date(r.data + 'T12:00:00').toLocaleDateString('pt-BR', { weekday:'short', day:'numeric', month:'long' })}</div>
+          <div class="hist-meta">${r.total_pedidos} pedidos</div>
+        </div>
+        <div class="hist-fat">${fmt(r.faturamento)}</div>
+      </div>`).join('') || '<div style="color:var(--g400);">Nenhum histórico.</div>';
+  } catch(e) { console.error(e); }
+}
+
+function verDia(data) { $('rel-data').value = data; navTo('relatorio'); setTimeout(carregarRelatorio, 100); }
+
+// ═══════════ CARDÁPIO - CARREGAR ═══════════
+async function carregarCardapioAcai() {
+  try {
+    [A.dTamAcai, A.dAcomp, A.dCopos] = await Promise.all([
+      api('/api/cardapio/acai/tamanhos'), api('/api/cardapio/acai/acompanhamentos'), api('/api/cardapio/acai/copos-montados'),
+    ]);
+    renderTamAcai(); renderAcomp(); renderCopos();
+  } catch(e) { console.error(e); }
+}
+
+async function carregarCardapioPizza() {
+  try {
+    [A.dTamPizza, A.dSabores, A.dBordas] = await Promise.all([
+      api('/api/cardapio/pizza/tamanhos'), api('/api/cardapio/pizza/sabores'), api('/api/cardapio/pizza/bordas'),
+    ]);
+    renderTamPizza(); renderSabores(); renderBordas();
+  } catch(e) { console.error(e); }
+}
+
+async function carregarCardapioBebidas() {
+  try {
+    A.dBebidas = await api('/api/cardapio/bebidas');
+    renderBebidas();
+  } catch(e) { console.error(e); }
+}
+
+// ═══════════ CARDÁPIO - RENDER ═══════════
+function statusBadge(v) { return v ? '<span class="badge-on">Ativo</span>' : '<span class="badge-off">Inativo</span>'; }
+function acoes(tipo, id) {
+  return `<div class="tbl-actions">
+    <button class="tbl-btn edit" onclick="abrirModal('${tipo}',${id})">Editar</button>
+    <button class="tbl-btn del"  onclick="deletarItem('${tipo}',${id})">Excluir</button>
+  </div>`;
+}
+
+function renderTamAcai() {
+  $('tbl-tam-acai').innerHTML = A.dTamAcai.map(t => `<tr>
+    <td><strong>${t.nome}</strong></td><td>${t.volume_ml}ml</td>
+    <td>${t.acompanhamentos_gratis}</td><td>${fmt(t.preco)}</td>
+    <td>${statusBadge(t.ativo)}</td><td>${acoes('tam-acai',t.id)}</td></tr>`).join('');
+}
+function renderAcomp() {
+  $('tbl-acomp').innerHTML = A.dAcomp.map(a => `<tr>
+    <td><strong>${a.nome}</strong></td>
+    <td>${parseFloat(a.preco_extra) > 0 ? fmt(a.preco_extra) : 'Grátis'}</td>
+    <td>${statusBadge(a.disponivel)}</td><td>${acoes('acomp',a.id)}</td></tr>`).join('');
+}
+function renderCopos() {
+  $('tbl-copos').innerHTML = A.dCopos.map(c => `<tr>
+    <td><strong>${c.nome}</strong></td><td>${c.descricao||'—'}</td>
+    <td>${fmt(c.preco)}</td><td>${statusBadge(c.disponivel)}</td>
+    <td>${acoes('copos',c.id)}</td></tr>`).join('');
+}
+function renderTamPizza() {
+  $('tbl-tam-pizza').innerHTML = A.dTamPizza.map(t => `<tr>
+    <td><strong>${t.nome}</strong></td><td>${t.descricao||'—'}</td>
+    <td>${t.fatias||'—'}</td><td>${fmt(t.preco_base)}</td>
+    <td>${statusBadge(t.ativo)}</td><td>${acoes('tam-pizza',t.id)}</td></tr>`).join('');
+}
+function renderSabores() {
+  $('tbl-sabores').innerHTML = A.dSabores.map(s => `<tr>
+    <td><strong>${s.nome}</strong></td><td>${s.categoria}</td>
+    <td>${s.descricao||'—'}</td><td>${statusBadge(s.disponivel)}</td>
+    <td>${acoes('sabores',s.id)}</td></tr>`).join('');
+}
+function renderBordas() {
+  $('tbl-bordas').innerHTML = A.dBordas.map(b => `<tr>
+    <td><strong>${b.nome}</strong></td>
+    <td>${parseFloat(b.preco) > 0 ? fmt(b.preco) : 'Grátis'}</td>
+    <td>${statusBadge(b.disponivel)}</td><td>${acoes('bordas',b.id)}</td></tr>`).join('');
+}
+function renderBebidas() {
+  $('tbl-bebidas').innerHTML = A.dBebidas.map(b => `<tr>
+    <td><strong>${b.nome}</strong></td><td>${b.categoria}</td>
+    <td>${b.descricao||'—'}</td><td>${fmt(b.preco)}</td>
+    <td>${statusBadge(b.disponivel)}</td><td>${acoes('bebidas',b.id)}</td></tr>`).join('');
+}
+
+// ═══════════ CARDÁPIO - MODAL ═══════════
+const formConfigs = {
+  'tam-acai': {
+    title: 'Tamanho de Açaí',
+    fields: `
+      <div class="form-row-2">
+        <div class="form-row"><label class="form-label">Nome</label><input class="form-input" id="f-nome" placeholder="ex: 414ml"></div>
+        <div class="form-row"><label class="form-label">Volume (ml)</label><input type="number" class="form-input" id="f-volume_ml"></div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-row"><label class="form-label">Preço (R$)</label><input type="number" class="form-input" id="f-preco" step="0.01"></div>
+        <div class="form-row"><label class="form-label">Acomp. Grátis</label><input type="number" class="form-input" id="f-acompanhamentos_gratis"></div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-row"><label class="form-label">Ordem</label><input type="number" class="form-input" id="f-ordem"></div>
+        <div class="form-row" style="padding-top:22px;"><label class="form-check"><input type="checkbox" id="f-ativo"> Ativo</label></div>
+      </div>`,
+    getData: () => ({ nome:$('f-nome').value, volume_ml:+$('f-volume_ml').value, preco:+$('f-preco').value, acompanhamentos_gratis:+$('f-acompanhamentos_gratis').value, ordem:+$('f-ordem').value, ativo:$('f-ativo').checked }),
+    fill: (item) => { $('f-nome').value=item.nome; $('f-volume_ml').value=item.volume_ml; $('f-preco').value=item.preco; $('f-acompanhamentos_gratis').value=item.acompanhamentos_gratis; $('f-ordem').value=item.ordem; $('f-ativo').checked=!!item.ativo; },
+  },
+  'acomp': {
+    title: 'Acompanhamento',
+    fields: `
+      <div class="form-row-2">
+        <div class="form-row"><label class="form-label">Nome</label><input class="form-input" id="f-nome"></div>
+        <div class="form-row"><label class="form-label">Preço Extra (0 = grátis)</label><input type="number" class="form-input" id="f-preco_extra" step="0.01"></div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-row"><label class="form-label">Ordem</label><input type="number" class="form-input" id="f-ordem"></div>
+        <div class="form-row" style="padding-top:22px;"><label class="form-check"><input type="checkbox" id="f-disponivel"> Disponível</label></div>
+      </div>`,
+    getData: () => ({ nome:$('f-nome').value, preco_extra:+$('f-preco_extra').value, ordem:+$('f-ordem').value, disponivel:$('f-disponivel').checked }),
+    fill: (item) => { $('f-nome').value=item.nome; $('f-preco_extra').value=item.preco_extra; $('f-ordem').value=item.ordem; $('f-disponivel').checked=!!item.disponivel; },
+  },
+  'copos': {
+    title: 'Copo Pronto',
+    fields: `
+      <div class="form-row"><label class="form-label">Nome</label><input class="form-input" id="f-nome"></div>
+      <div class="form-row"><label class="form-label">Descrição</label><textarea class="form-input" id="f-descricao" rows="2"></textarea></div>
+      <div class="form-row-2">
+        <div class="form-row"><label class="form-label">Preço (R$)</label><input type="number" class="form-input" id="f-preco" step="0.01"></div>
+        <div class="form-row" style="padding-top:22px;"><label class="form-check"><input type="checkbox" id="f-disponivel"> Disponível</label></div>
+      </div>`,
+    getData: () => ({ nome:$('f-nome').value, descricao:$('f-descricao').value, preco:+$('f-preco').value, disponivel:$('f-disponivel').checked }),
+    fill: (item) => { $('f-nome').value=item.nome; $('f-descricao').value=item.descricao||''; $('f-preco').value=item.preco; $('f-disponivel').checked=!!item.disponivel; },
+  },
+  'tam-pizza': {
+    title: 'Tamanho de Pizza',
+    fields: `
+      <div class="form-row-2">
+        <div class="form-row"><label class="form-label">Nome (P/M/G/GG)</label><input class="form-input" id="f-nome"></div>
+        <div class="form-row"><label class="form-label">Descrição</label><input class="form-input" id="f-descricao" placeholder="ex: 8 fatias"></div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-row"><label class="form-label">Fatias</label><input type="number" class="form-input" id="f-fatias"></div>
+        <div class="form-row"><label class="form-label">Preço Base (R$)</label><input type="number" class="form-input" id="f-preco_base" step="0.01"></div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-row"><label class="form-label">Ordem</label><input type="number" class="form-input" id="f-ordem"></div>
+        <div class="form-row" style="padding-top:22px;"><label class="form-check"><input type="checkbox" id="f-ativo"> Ativo</label></div>
+      </div>`,
+    getData: () => ({ nome:$('f-nome').value, descricao:$('f-descricao').value, fatias:+$('f-fatias').value, preco_base:+$('f-preco_base').value, ordem:+$('f-ordem').value, ativo:$('f-ativo').checked }),
+    fill: (item) => { $('f-nome').value=item.nome; $('f-descricao').value=item.descricao||''; $('f-fatias').value=item.fatias||0; $('f-preco_base').value=item.preco_base; $('f-ordem').value=item.ordem; $('f-ativo').checked=!!item.ativo; },
+  },
+  'sabores': {
+    title: 'Sabor de Pizza',
+    fields: `
+      <div class="form-row"><label class="form-label">Nome</label><input class="form-input" id="f-nome"></div>
+      <div class="form-row"><label class="form-label">Descrição</label><textarea class="form-input" id="f-descricao" rows="2"></textarea></div>
+      <div class="form-row-2">
+        <div class="form-row">
+          <label class="form-label">Categoria</label>
+          <select class="form-input" id="f-categoria"><option value="Salgada">Salgada</option><option value="Doce">Doce</option></select>
+        </div>
+        <div class="form-row"><label class="form-label">Ordem</label><input type="number" class="form-input" id="f-ordem"></div>
+      </div>
+      <div class="form-row"><label class="form-check"><input type="checkbox" id="f-disponivel"> Disponível</label></div>`,
+    getData: () => ({ nome:$('f-nome').value, descricao:$('f-descricao').value, categoria:$('f-categoria').value, ordem:+$('f-ordem').value, disponivel:$('f-disponivel').checked }),
+    fill: (item) => { $('f-nome').value=item.nome; $('f-descricao').value=item.descricao||''; $('f-categoria').value=item.categoria||'Salgada'; $('f-ordem').value=item.ordem; $('f-disponivel').checked=!!item.disponivel; },
+  },
+  'bordas': {
+    title: 'Borda de Pizza',
+    fields: `
+      <div class="form-row-2">
+        <div class="form-row"><label class="form-label">Nome</label><input class="form-input" id="f-nome"></div>
+        <div class="form-row"><label class="form-label">Preço (R$)</label><input type="number" class="form-input" id="f-preco" step="0.01"></div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-row"><label class="form-label">Ordem</label><input type="number" class="form-input" id="f-ordem"></div>
+        <div class="form-row" style="padding-top:22px;"><label class="form-check"><input type="checkbox" id="f-disponivel"> Disponível</label></div>
+      </div>`,
+    getData: () => ({ nome:$('f-nome').value, preco:+$('f-preco').value, ordem:+$('f-ordem').value, disponivel:$('f-disponivel').checked }),
+    fill: (item) => { $('f-nome').value=item.nome; $('f-preco').value=item.preco; $('f-ordem').value=item.ordem; $('f-disponivel').checked=!!item.disponivel; },
+  },
+  'bebidas': {
+    title: 'Bebida',
+    fields: `
+      <div class="form-row-2">
+        <div class="form-row"><label class="form-label">Nome</label><input class="form-input" id="f-nome"></div>
+        <div class="form-row"><label class="form-label">Categoria</label><input class="form-input" id="f-categoria" placeholder="Refrigerante/Suco/Água"></div>
+      </div>
+      <div class="form-row"><label class="form-label">Descrição</label><input class="form-input" id="f-descricao" placeholder="ex: 350ml"></div>
+      <div class="form-row-2">
+        <div class="form-row"><label class="form-label">Preço (R$)</label><input type="number" class="form-input" id="f-preco" step="0.01"></div>
+        <div class="form-row"><label class="form-label">Ordem</label><input type="number" class="form-input" id="f-ordem"></div>
+      </div>
+      <div class="form-row"><label class="form-check"><input type="checkbox" id="f-disponivel"> Disponível</label></div>`,
+    getData: () => ({ nome:$('f-nome').value, categoria:$('f-categoria').value, descricao:$('f-descricao').value, preco:+$('f-preco').value, ordem:+$('f-ordem').value, disponivel:$('f-disponivel').checked }),
+    fill: (item) => { $('f-nome').value=item.nome; $('f-categoria').value=item.categoria||''; $('f-descricao').value=item.descricao||''; $('f-preco').value=item.preco; $('f-ordem').value=item.ordem; $('f-disponivel').checked=!!item.disponivel; },
+  },
+};
+
+const urlMap = {
+  'tam-acai': '/api/cardapio/acai/tamanhos',
+  'acomp': '/api/cardapio/acai/acompanhamentos',
+  'copos': '/api/cardapio/acai/copos-montados',
+  'tam-pizza': '/api/cardapio/pizza/tamanhos',
+  'sabores': '/api/cardapio/pizza/sabores',
+  'bordas': '/api/cardapio/pizza/bordas',
+  'bebidas': '/api/cardapio/bebidas',
+};
+const dataMap = {
+  'tam-acai': 'dTamAcai', 'acomp': 'dAcomp', 'copos': 'dCopos',
+  'tam-pizza': 'dTamPizza', 'sabores': 'dSabores', 'bordas': 'dBordas', 'bebidas': 'dBebidas',
+};
+const renderMap = {
+  'tam-acai': renderTamAcai, 'acomp': renderAcomp, 'copos': renderCopos,
+  'tam-pizza': renderTamPizza, 'sabores': renderSabores, 'bordas': renderBordas, 'bebidas': renderBebidas,
+};
+
+function abrirModal(tipo, id) {
+  A.cardTipo = tipo;
+  A.cardItem = id ? A[dataMap[tipo]].find(x => x.id === id) : null;
+  const cfg = formConfigs[tipo];
+  $('mc-title').textContent = (id ? 'Editar' : 'Novo') + ' — ' + cfg.title;
+  $('mc-body').innerHTML = cfg.fields;
+  if (A.cardItem) cfg.fill(A.cardItem);
+  $('modal-card').classList.add('show');
+}
+function fecharModalCard() { $('modal-card').classList.remove('show'); }
+
+async function salvarItem() {
+  const cfg = formConfigs[A.cardTipo];
+  const data = cfg.getData();
+  if (!data.nome) { alert('Nome obrigatório'); return; }
+  const url = urlMap[A.cardTipo];
+  const method = A.cardItem ? 'PUT' : 'POST';
+  const endpoint = A.cardItem ? `${url}/${A.cardItem.id}` : url;
+  try {
+    const saved = await api(endpoint, { method, body: JSON.stringify(data) });
+    const arr = A[dataMap[A.cardTipo]];
+    if (A.cardItem) {
+      const idx = arr.findIndex(x => x.id === A.cardItem.id);
+      arr[idx] = saved;
+    } else {
+      arr.push(saved);
+    }
+    renderMap[A.cardTipo]();
+    fecharModalCard();
+  } catch(e) { alert('Erro: ' + e.message); }
+}
+
+async function deletarItem(tipo, id) {
+  if (!confirm('Excluir este item?')) return;
+  try {
+    await api(urlMap[tipo] + '/' + id, { method: 'DELETE' });
+    A[dataMap[tipo]] = A[dataMap[tipo]].filter(x => x.id !== id);
+    renderMap[tipo]();
+  } catch(e) { alert('Erro: ' + e.message); }
+}
+
+// ═══════════ SOCKET.IO ═══════════
+function initSocket() {
+  try {
+    const socket = io(BASE_URL);
+    socket.on('connect', () => { $('dot').classList.add('ok'); $('conn-txt').textContent = 'Conectado'; });
+    socket.on('disconnect', () => { $('dot').classList.remove('ok'); $('conn-txt').textContent = 'Desconectado'; });
+    socket.on('novo_pedido', (p) => {
+      A.pedidos.unshift(p);
+      renderPedidos(); atualizarStats();
+      mostrarNotif(p);
+    });
+    socket.on('pedido_atualizado', (p) => {
+      const idx = A.pedidos.findIndex(x => x.id === p.id);
+      if (idx >= 0) { A.pedidos[idx] = p; renderPedidos(); atualizarStats(); }
+    });
+    socket.on('pedido_pago', (p) => {
+      const idx = A.pedidos.findIndex(x => x.id === p.id);
+      if (idx >= 0) { A.pedidos[idx] = p; renderPedidos(); atualizarStats(); }
+    });
+  } catch(e) { console.warn('Socket erro:', e); }
+}
+
+function mostrarNotif(p) {
+  $('notif-title').textContent = 'Novo Pedido — ' + p.numero_pedido;
+  $('notif-body').textContent = p.tipo === 'pizzaria' ? 'Pizzaria' : 'Açaiteria';
+  $('notif').classList.add('show');
+  setTimeout(() => $('notif').classList.remove('show'), 5000);
+}
+
+// ═══════════ INIT ═══════════
+setDate();
+carregarPedidos();
+setInterval(carregarPedidos, 30000);
+
+const sScript = document.createElement('script');
+sScript.src = BASE_URL + '/socket.io/socket.io.js';
+sScript.onload = initSocket;
+document.body.appendChild(sScript);
+</script>
+</body>
+</html>

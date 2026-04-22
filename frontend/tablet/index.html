@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Autoatendimento</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --pizza: #C8401A;  --pizza-bg: #FFF5F2;  --pizza-light: #FDDDD4;
+  --acai:  #5B2D8E;  --acai-bg:  #F5F0FF;  --acai-light:  #E4D5FF;
+  --dark: #111118;   --g900: #1C1C26;   --g700: #3A3A4A;
+  --g500: #6E6E82;   --g300: #C2C2D0;   --g100: #F4F4F8;
+  --white: #FFFFFF;  --ok: #1A8A4A;
+  --r: 16px; --rsm: 10px;
+  font-family: 'DM Sans', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: var(--dark); }
+
+/* ── VIEWS (telas fixas 100% da tela) ── */
+.view {
+  position: fixed; inset: 0;
+  display: none; flex-direction: column;
+  background: var(--white); overflow: hidden;
+}
+.view.active { display: flex; }
+
+/* ── HOME ── */
+#view-home {
+  background: #F7F7FA;
+  align-items: center; justify-content: center;
+}
+.home-logo {
+  font-family: 'Syne', sans-serif; font-weight: 800; font-size: 28px;
+  color: var(--dark); text-align: center; margin-bottom: 52px;
+}
+.home-logo span { display: block; font-size: 13px; font-weight: 400; color: var(--g500); margin-top: 6px; letter-spacing: 0.5px; }
+.home-cards { display: flex; gap: 20px; padding: 0 32px; width: 100%; max-width: 700px; }
+.home-card {
+  flex: 1; border: none; border-radius: 28px; padding: 36px 20px 32px;
+  cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 18px;
+  transition: transform .15s, box-shadow .15s;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+}
+.home-card:active { transform: scale(0.97); box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+.home-card.c-acai  { background: #fff; color: var(--acai); }
+.home-card.c-pizza { background: #fff; color: var(--pizza); }
+.home-logo-img {
+  width: 140px; height: 140px; border-radius: 20px;
+  overflow: hidden; display: flex; align-items: center; justify-content: center;
+  background: var(--g100);
+}
+.home-logo-img img { width: 100%; height: 100%; object-fit: contain; }
+.home-logo-placeholder {
+  font-size: 12px; color: var(--g500); text-align: center; padding: 8px;
+}
+.home-name { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 22px; }
+.home-sub  { font-size: 13px; opacity: 0.6; }
+
+/* ── TOPBAR ── */
+.topbar {
+  display: flex; align-items: center; padding: 14px 18px; gap: 12px;
+  flex-shrink: 0; border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+.topbar.ta { background: var(--acai-bg); }
+.topbar.tp { background: var(--pizza-bg); }
+.topbar.td { background: var(--g100); }
+.btn-back {
+  width: 40px; height: 40px; border: none; border-radius: 50%;
+  background: rgba(0,0,0,0.07); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.btn-back:active { background: rgba(0,0,0,0.14); }
+.btn-back svg { width: 18px; height: 18px; }
+.topbar-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 18px; flex: 1; }
+.ta .topbar-title { color: var(--acai); }
+.tp .topbar-title { color: var(--pizza); }
+.td .topbar-title { color: var(--dark); }
+.btn-cart {
+  position: relative; width: 44px; height: 44px; border: none;
+  border-radius: 50%; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.btn-cart svg { width: 22px; height: 22px; }
+.btn-cart.ca { background: var(--acai);  color: #fff; }
+.btn-cart.cp { background: var(--pizza); color: #fff; }
+.btn-cart:active { opacity: 0.8; }
+.badge {
+  position: absolute; top: -3px; right: -3px;
+  width: 18px; height: 18px; background: var(--dark); color: #fff;
+  border-radius: 50%; font-size: 10px; font-weight: 700;
+  display: none; align-items: center; justify-content: center;
+}
+.badge.show { display: flex; }
+
+/* ── TABS ── */
+.tabs { display: flex; gap: 6px; padding: 14px 18px 0; flex-shrink: 0; }
+.tab {
+  padding: 8px 20px; border: none; border-radius: 100px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  background: var(--g100); color: var(--g700); transition: all .12s;
+}
+.tab.on-a { background: var(--acai);  color: #fff; }
+.tab.on-p { background: var(--pizza); color: #fff; }
+
+/* ── SCROLL BODY ── */
+.scroll-body {
+  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: 20px; display: flex; flex-direction: column; gap: 22px;
+}
+
+/* ── SEC TITLE ── */
+.sec { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 12px;
+  color: var(--g500); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; }
+
+/* ── SEL CARDS ── */
+.sel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(136px,1fr)); gap: 10px; }
+.sel-card {
+  border-radius: var(--rsm); border: 2px solid var(--g100);
+  background: var(--white); padding: 14px 10px; cursor: pointer;
+  text-align: center; transition: border-color .12s, background .12s; position: relative;
+}
+.sel-ck {
+  position: absolute; top: 7px; right: 7px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: transparent; display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity .12s;
+}
+.sel-ck svg { width: 10px; height: 10px; }
+.sel-card.on-a { border-color: var(--acai);  background: var(--acai-bg); }
+.sel-card.on-p { border-color: var(--pizza); background: var(--pizza-bg); }
+.sel-card.on-a .sel-ck { background: var(--acai);  opacity: 1; color: #fff; }
+.sel-card.on-p .sel-ck { background: var(--pizza); opacity: 1; color: #fff; }
+.sc-name  { font-weight: 600; font-size: 14px; color: var(--dark); margin-top: 4px; }
+.sc-sub   { font-size: 12px; color: var(--g500); margin-top: 2px; }
+.sc-price { font-weight: 700; font-size: 15px; color: var(--dark); margin-top: 8px; }
+
+/* pizza size circle */
+.pz-circle {
+  border-radius: 50%; border: 3px solid var(--pizza);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Syne', sans-serif; font-weight: 800; margin: 0 auto 4px;
+}
+
+/* ── COPOS PRONTOS ── */
+.copo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(154px,1fr)); gap: 10px; }
+.copo-card {
+  border-radius: var(--rsm); border: 2px solid var(--g100);
+  background: var(--white); padding: 14px; cursor: pointer; transition: all .12s;
+}
+.copo-card.on-a { border-color: var(--acai); background: var(--acai-bg); }
+.copo-name  { font-weight: 600; font-size: 14px; color: var(--dark); }
+.copo-desc  { font-size: 12px; color: var(--g500); margin-top: 4px; line-height: 1.4; }
+.copo-price { font-weight: 700; font-size: 15px; color: var(--dark); margin-top: 10px; }
+
+/* ── CHIPS ── */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  padding: 10px 18px; border-radius: 100px;
+  border: 2px solid var(--g100); background: var(--white);
+  font-size: 16px; font-weight: 500; cursor: pointer; color: var(--dark); transition: all .12s;
+}
+.chip.on-a { border-color: var(--acai); background: var(--acai); color: #fff; }
+.chip.extra-tag { border-color: #B88000; }
+.chip.extra-tag.on-a { background: #B88000; border-color: #B88000; color: #fff; }
+
+/* ── INFO BOX ── */
+.info-box {
+  background: var(--acai-bg); border-radius: var(--rsm);
+  padding: 12px 14px; font-size: 13px; color: var(--acai); font-weight: 500;
+}
+
+/* ── SABORES ── */
+.cat-label { font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.8px; color: var(--g500); padding: 8px 0 6px; }
+.sabor-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px; border-radius: var(--rsm);
+  border: 2px solid var(--g100); background: var(--white);
+  cursor: pointer; margin-bottom: 8px; transition: all .12s;
+}
+.sabor-item.on-p { border-color: var(--pizza); background: var(--pizza-bg); }
+.sabor-radio {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid var(--g300); flex-shrink: 0; position: relative; transition: all .12s;
+}
+.on-p .sabor-radio { border-color: var(--pizza); background: var(--pizza); }
+.on-p .sabor-radio::after { content:''; position:absolute; inset:3px; border-radius:50%; background:#fff; }
+.sabor-nome { font-weight: 600; font-size: 14px; color: var(--dark); }
+.sabor-desc { font-size: 12px; color: var(--g500); margin-top: 2px; }
+
+/* ── BEBIDAS ── */
+.bebida-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(138px,1fr)); gap: 10px; margin-bottom: 6px; }
+.bebida-card {
+  border-radius: var(--rsm); border: 2px solid var(--g100);
+  background: var(--white); padding: 14px 12px;
+  cursor: pointer; text-align: center; transition: all .12s; position: relative;
+}
+.bebida-card.on-p { border-color: var(--pizza); background: var(--pizza-bg); }
+.bebida-qty {
+  position: absolute; top: 6px; right: 6px;
+  background: var(--dark); color: #fff;
+  border-radius: 100px; font-size: 11px; font-weight: 700; padding: 2px 7px;
+}
+
+/* ── CONSUMO ── */
+.consumo-row { display: flex; gap: 12px; }
+.consumo-btn {
+  flex: 1; border: 2px solid var(--g100); background: var(--white);
+  border-radius: var(--rsm); padding: 18px 10px;
+  cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; transition: all .12s;
+}
+.consumo-btn svg { width: 26px; height: 26px; }
+.consumo-btn span { font-size: 13px; font-weight: 600; color: var(--dark); }
+.consumo-btn.on-a { border-color: var(--acai);  background: var(--acai-bg); }
+.consumo-btn.on-p { border-color: var(--pizza); background: var(--pizza-bg); }
+
+/* ── FOOTER ── */
+.view-footer { padding: 14px 18px; border-top: 1px solid var(--g100); flex-shrink: 0; }
+.btn-primary {
+  width: 100%; padding: 17px; border: none; border-radius: var(--r);
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: 16px;
+  cursor: pointer; color: #fff; transition: opacity .12s;
+}
+.btn-primary:active { opacity: 0.85; }
+.btn-primary.ba { background: var(--acai); }
+.btn-primary.bp { background: var(--pizza); }
+.btn-primary.bd { background: var(--dark); }
+.btn-secondary {
+  width: 100%; padding: 13px; border: 2px solid var(--g300);
+  border-radius: var(--r); font-weight: 600; font-size: 14px;
+  background: var(--white); cursor: pointer; color: var(--g700); margin-top: 10px;
+}
+
+/* ── CARRINHO ── */
+.cart-empty {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 14px; color: var(--g500);
+}
+.cart-empty svg { width: 52px; height: 52px; opacity: 0.3; }
+.cart-empty p { font-size: 15px; }
+.cart-list { flex: 1; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+.cart-item {
+  background: var(--g100); border-radius: var(--rsm);
+  padding: 14px; display: flex; align-items: flex-start; gap: 10px;
+}
+.cart-info { flex: 1; }
+.ci-name   { font-weight: 600; font-size: 14px; color: var(--dark); }
+.ci-detail { font-size: 12px; color: var(--g500); margin-top: 4px; line-height: 1.5; }
+.ci-price  { font-weight: 700; font-size: 15px; color: var(--dark); white-space: nowrap; }
+.ci-remove {
+  width: 28px; height: 28px; border: none; border-radius: 50%;
+  background: var(--g300); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.ci-remove svg { width: 12px; height: 12px; }
+.ci-remove:active { background: #e0b0b0; }
+.cart-total-bar {
+  padding: 14px 18px 0; display: flex; justify-content: space-between; align-items: center;
+  border-top: 2px solid var(--g100); flex-shrink: 0;
+}
+.ct-label { font-size: 14px; color: var(--g500); font-weight: 500; }
+.ct-value { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 24px; color: var(--dark); }
+
+/* ── CONFIRMAÇÃO ── */
+#view-confirm { align-items: center; justify-content: center; }
+.confirm-inner { text-align: center; padding: 40px 32px; max-width: 360px; }
+.confirm-icon {
+  width: 80px; height: 80px; border-radius: 50%; background: #E8F8EF;
+  display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;
+}
+.confirm-icon svg { width: 40px; height: 40px; color: var(--ok); }
+.confirm-num { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 30px; color: var(--dark); }
+.confirm-sub { font-size: 14px; color: var(--g500); margin-top: 10px; line-height: 1.5; }
+
+/* ── LOADING ── */
+.overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(17,17,24,0.55); z-index: 9998;
+  align-items: center; justify-content: center;
+}
+.overlay.show { display: flex; }
+.spinner {
+  width: 44px; height: 44px; border: 3px solid rgba(255,255,255,0.2);
+  border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 28px; left: 50%;
+  transform: translateX(-50%) translateY(72px);
+  background: var(--g900); color: #fff;
+  padding: 11px 20px; border-radius: 100px;
+  font-size: 14px; font-weight: 500; z-index: 9999;
+  transition: transform .22s; white-space: nowrap; pointer-events: none;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- ══ HOME ══ -->
+<div id="view-home" class="view active">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;">
+    <div class="home-logo">
+      Autoatendimento
+      <span>Toque para começar</span>
+    </div>
+    <div class="home-cards">
+      <button class="home-card c-acai" onclick="abrirAcai()">
+        <div class="home-logo-img">
+          <img src="/shared/logo-acai.png" alt="Açaiteria">
+        </div>
+        <div class="home-name">Açaiteria</div>
+        <div class="home-sub">Monte seu copo</div>
+      </button>
+      <button class="home-card c-pizza" onclick="abrirPizza()">
+        <div class="home-logo-img">
+          <img src="/shared/logo-pizza.png" alt="Pizzaria">
+        </div>
+        <div class="home-name">Pizzaria</div>
+        <div class="home-sub">Escolha seu sabor</div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ AÇAITERIA ══ -->
+<div id="view-acai" class="view">
+  <div class="topbar ta">
+    <button class="btn-back" onclick="irHome()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+    </button>
+    <span class="topbar-title">Açaiteria</span>
+    <button class="btn-cart ca" onclick="irCarrinho()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      <span class="badge" id="badge-a"></span>
+    </button>
+  </div>
+
+  <div class="scroll-body">
+    <div>
+      <div class="sec">Tamanho do copo</div>
+      <div class="sel-grid" id="grid-tam-acai"></div>
+    </div>
+    <div id="secao-copos">
+      <div class="sec">Copos prontos</div>
+      <div class="copo-grid" id="grid-copos"></div>
+    </div>
+    <div>
+      <div class="info-box" id="acai-info">Selecione um tamanho para ver quantos acompanhamentos grátis você tem</div>
+      <div style="height:14px;"></div>
+      <div class="sec">Acompanhamentos grátis</div>
+      <div class="chips" id="chips-gratis"></div>
+    </div>
+    <div>
+      <div class="sec">Adicionais extras</div>
+      <div class="chips" id="chips-extras"></div>
+    </div>
+    <div>
+      <div class="sec">Para comer</div>
+      <div class="consumo-row">
+        <button class="consumo-btn" id="cb-acai-local" onclick="selConsumo('acai','local')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          <span>Aqui</span>
+        </button>
+        <button class="consumo-btn" id="cb-acai-viagem" onclick="selConsumo('acai','viagem')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14M5 8a2 2 0 010-4h14a2 2 0 010 4M5 8l1 11a2 2 0 002 2h8a2 2 0 002-2L19 8"/></svg>
+          <span>Viagem</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="view-footer" style="background:var(--acai-bg);">
+    <button class="btn-primary ba" onclick="addAcai()">Adicionar ao carrinho</button>
+  </div>
+</div>
+
+<!-- ══ PIZZARIA (CORRIGIDA - MÚLTIPLOS SABORES) ══ -->
+<div id="view-pizza" class="view">
+  <div class="topbar tp">
+    <button class="btn-back" onclick="irHome()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+    </button>
+    <span class="topbar-title">Pizzaria</span>
+    <button class="btn-cart cp" onclick="irCarrinho()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      <span class="badge" id="badge-p"></span>
+    </button>
+  </div>
+
+  <div class="scroll-body">
+    <div>
+      <div class="sec">Tamanho</div>
+      <div class="sel-grid" id="grid-tam-pizza"></div>
+    </div>
+    <div>
+      <div class="sec">Sabores (selecione até o limite do tamanho)</div>
+      <div id="list-sabores"></div>
+      <div id="info-sabores" style="background: var(--pizza-bg); border-radius: 10px; padding: 12px 14px; font-size: 13px; font-weight: 500; text-align: center; margin-top: 12px;">0 sabores selecionados</div>
+    </div>
+    <div>
+      <div class="sec">Borda</div>
+      <div class="sel-grid" id="grid-bordas"></div>
+    </div>
+    <div>
+      <div class="sec">Bebidas (opcional)</div>
+      <div id="area-bebidas"></div>
+      <div id="acucar-area" style="display:none;margin-top:14px;">
+        <div class="sec">Deseja açúcar no suco?</div>
+        <div class="consumo-row">
+          <button class="consumo-btn" id="cb-acucar-sim" onclick="selAcucar(true)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <span>Com açúcar</span>
+          </button>
+          <button class="consumo-btn" id="cb-acucar-nao" onclick="selAcucar(false)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="8" y1="8" x2="16" y2="16"/></svg>
+            <span>Sem açúcar</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="sec">Observações (opcional)</div>
+      <textarea id="pizza-obs" placeholder="Ex: quero 2 copos descartáveis, sem cebola..." style="width:100%;padding:12px;border:2px solid var(--g100);border-radius:var(--rsm);font-family:inherit;font-size:14px;resize:none;outline:none;min-height:80px;" onfocus="this.style.borderColor='var(--pizza)'" onblur="this.style.borderColor='var(--g100)'"></textarea>
+    </div>
+    <div>
+      <div class="sec">Para comer</div>
+      <div class="consumo-row">
+        <button class="consumo-btn" id="cb-pizza-local" onclick="selConsumo('pizza','local')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          <span>Aqui</span>
+        </button>
+        <button class="consumo-btn" id="cb-pizza-viagem" onclick="selConsumo('pizza','viagem')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14M5 8a2 2 0 010-4h14a2 2 0 010 4M5 8l1 11a2 2 0 002 2h8a2 2 0 002-2L19 8"/></svg>
+          <span>Viagem</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="view-footer" style="background:var(--pizza-bg);">
+    <button class="btn-primary bp" onclick="addPizza()">Adicionar ao carrinho</button>
+  </div>
+</div>
+
+<!-- ══ CARRINHO ══ -->
+<div id="view-cart" class="view">
+  <div class="topbar td">
+    <button class="btn-back" onclick="voltarDoCarrinho()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+    </button>
+    <span class="topbar-title">Carrinho</span>
+  </div>
+
+  <div class="cart-empty" id="cart-empty">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+    <p>Carrinho vazio</p>
+  </div>
+
+  <div class="cart-list" id="cart-list" style="display:none;"></div>
+
+  <div id="cart-bottom" style="display:none;">
+    <div class="cart-total-bar">
+      <span class="ct-label">Total</span>
+      <span class="ct-value" id="cart-total">R$ 0,00</span>
+    </div>
+    <div class="view-footer">
+      <button class="btn-primary bd" onclick="finalizarPedido()">Finalizar pedido</button>
+      <button class="btn-secondary" onclick="voltarDoCarrinho()">Adicionar mais itens</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CONFIRMAÇÃO ══ -->
+<div id="view-confirm" class="view">
+  <div class="confirm-inner" style="margin:auto;">
+    <div class="confirm-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div class="confirm-num" id="confirm-num">—</div>
+    <div class="confirm-sub">Pedido recebido!<br>Aguarde ser chamado.</div>
+    <div style="height:32px;"></div>
+    <button class="btn-primary bd" style="max-width:280px;margin:0 auto;" onclick="reiniciar()">Novo pedido</button>
+  </div>
+</div>
+
+<!-- ══ LOADING / TOAST ══ -->
+<div class="overlay" id="loading"><div class="spinner"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════ ESTADO ═══════
+const st = {
+  tipo: null,
+  // acai
+  tamAcai: null, copoSel: null, tamCopo: null, gratis: [], extras: [], consumoAcai: null,
+  // pizza - CORRIGIDO: array para múltiplos sabores
+  tamPizza: null, saboresSelecionados: [], borda: null, bebidasPizza: {}, acucar: null, consumoPizza: null,
+  // dados
+  dTamAcai: [], dCopos: [], dAcomp: [],
+  dTamPizza: [], dSabores: [], dBordas: [], dBebidas: [],
+  carrinho: [],
+};
+
+// ═══════ UTILS ═══════
+const $ = id => document.getElementById(id);
+function view(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  $(id).classList.add('active');
+}
+function loading(v) { $('loading').classList.toggle('show', v); }
+function toast(msg, d=3000) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), d);
+}
+function fmt(v) { return 'R$ ' + Number(v).toFixed(2).replace('.', ','); }
+// ⚙️ Altere para a URL do seu backend em produção
+const BASE_URL = window.BACKEND_URL || '';
+
+async function get(url) {
+  const c = new AbortController();
+  const tmr = setTimeout(() => c.abort(), 8000);
+  try {
+    const r = await fetch(BASE_URL + url, { signal: c.signal });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  } finally { clearTimeout(tmr); }
+}
+function badges() {
+  const n = st.carrinho.length;
+  ['badge-a','badge-p'].forEach(id => {
+    const el = $(id); el.textContent = n; el.classList.toggle('show', n > 0);
+  });
+}
+const CK = `<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="2 6 5 9 10 3"/></svg>`;
+
+// ═══════ NAVEGAÇÃO ═══════
+function irHome() { view('view-home'); }
+
+async function abrirAcai() {
+  st.tipo = 'acaiteria'; loading(true);
+  try {
+    [st.dTamAcai, st.dCopos, st.dAcomp] = await Promise.all([
+      get('/api/acai/tamanhos'), get('/api/acai/copos-montados'), get('/api/acai/acompanhamentos'),
+    ]);
+    renderTamAcai(); renderCopos(); renderAcomps();
+    resetAcai(); view('view-acai');
+  } catch { toast('Erro ao carregar cardápio. Tente novamente.', 4000); }
+  finally { loading(false); }
+}
+
+async function abrirPizza() {
+  st.tipo = 'pizzaria'; loading(true);
+  try {
+    [st.dTamPizza, st.dSabores, st.dBordas, st.dBebidas] = await Promise.all([
+      get('/api/pizza/tamanhos'), get('/api/pizza/sabores'), get('/api/pizza/bordas'), get('/api/pizza/bebidas'),
+    ]);
+    renderTamPizza(); renderSabores(); renderBordas(); renderBebidas();
+    resetPizza(); view('view-pizza');
+  } catch { toast('Erro ao carregar cardápio. Tente novamente.', 4000); }
+  finally { loading(false); }
+}
+
+function irCarrinho() { renderCarrinho(); view('view-cart'); }
+
+function voltarDoCarrinho() {
+  if (st.tipo === 'acaiteria') view('view-acai');
+  else if (st.tipo === 'pizzaria') view('view-pizza');
+  else view('view-home');
+}
+
+// ═══════ AÇAÍ (mantido igual) ═══════
+function renderTamAcai() {
+  $('grid-tam-acai').innerHTML = st.dTamAcai.map(t => `
+    <div class="sel-card" id="ta-${t.id}" onclick="selTamAcai(${t.id})">
+      <div class="sel-ck">${CK}</div>
+      <div class="sc-name">${t.nome}</div>
+      <div class="sc-sub">${t.acompanhamentos_gratis} grátis</div>
+      <div class="sc-price">${fmt(t.preco)}</div>
+    </div>`).join('');
+}
+
+function renderCopos() {
+  if (!st.dCopos.length) {
+    $('grid-copos').innerHTML = '<div style="color:var(--g500);font-size:14px;">Nenhum copo pronto disponível no momento.</div>';
+    $('secao-copos').style.display = 'none';
+    return;
+  }
+  $('secao-copos').style.display = 'block';
+  $('grid-copos').innerHTML = st.dCopos.map(c => {
+    return `
+    <div class="copo-card" id="cp-${c.id}" onclick="selCopo(${c.id})">
+      <div class="copo-name">${c.nome}</div>
+      <div class="copo-desc">${c.descricao || ''}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderAcomps() {
+  $('chips-gratis').innerHTML = st.dAcomp.filter(a => a.preco_extra == 0).map(a =>
+    `<div class="chip" id="ag-${a.id}" onclick="toggleAcomp(${a.id},false)">${a.nome}</div>`
+  ).join('');
+  $('chips-extras').innerHTML = st.dAcomp.filter(a => a.preco_extra > 0).map(a =>
+    `<div class="chip extra-tag" id="ae-${a.id}" onclick="toggleAcomp(${a.id},true)">${a.nome} +${fmt(a.preco_extra)}</div>`
+  ).join('');
+}
+
+function selTamAcai(id) {
+  st.tamAcai = id; st.gratis = []; st.extras = [];
+  // Se há copo selecionado, o tamanho serve para o copo (tamCopo)
+  if (st.copoSel) {
+    st.tamCopo = id;
+    document.querySelectorAll('[id^="ta-"]').forEach(e => e.classList.remove('on-a'));
+    $('ta-' + id).classList.add('on-a');
+    const tam = st.dTamAcai.find(t => t.id === id);
+    const c = st.dCopos.find(x => x.id === st.copoSel);
+    $('acai-info').textContent = `Copo pronto: ${c.nome} — ${tam.nome} (${fmt(tam.preco)}) — adicione extras se quiser`;
+    document.querySelectorAll('[id^="ag-"],[id^="ae-"]').forEach(e => e.classList.remove('on-a'));
+    return;
+  }
+  st.copoSel = null; st.tamCopo = null;
+  document.querySelectorAll('[id^="ta-"]').forEach(e => e.classList.remove('on-a'));
+  document.querySelectorAll('[id^="cp-"]').forEach(e => e.classList.remove('on-a'));
+  $('ta-' + id).classList.add('on-a');
+  const tam = st.dTamAcai.find(t => t.id === id);
+  $('acai-info').textContent = `Tamanho ${tam.nome} — escolha até ${tam.acompanhamentos_gratis} acompanhamentos grátis`;
+  document.querySelectorAll('[id^="ag-"],[id^="ae-"]').forEach(e => e.classList.remove('on-a'));
+}
+
+function toggleAcomp(id, isExtra) {
+  if (!st.tamAcai && !st.tamCopo) { toast('Escolha o tamanho primeiro'); return; }
+  const tam = st.dTamAcai.find(t => t.id === (st.tamAcai || st.tamCopo));
+  const arr = isExtra ? st.extras : st.gratis;
+  const pfx = isExtra ? 'ae-' : 'ag-';
+  const idx = arr.indexOf(id);
+  if (idx >= 0) {
+    arr.splice(idx, 1);
+    $(pfx + id).classList.remove('on-a');
+  } else {
+    if (!isExtra && arr.length >= tam.acompanhamentos_gratis) {
+      toast(`Máximo ${tam.acompanhamentos_gratis} grátis para este tamanho`); return;
+    }
+    arr.push(id);
+    $(pfx + id).classList.add('on-a');
+  }
+}
+
+function selCopo(id) {
+  st.copoSel = id; st.tamAcai = null; st.tamCopo = null; st.gratis = []; st.extras = [];
+  document.querySelectorAll('[id^="cp-"]').forEach(e => e.classList.remove('on-a'));
+  document.querySelectorAll('[id^="ta-"]').forEach(e => e.classList.remove('on-a'));
+  document.querySelectorAll('[id^="ag-"],[id^="ae-"]').forEach(e => e.classList.remove('on-a'));
+  $('cp-' + id).classList.add('on-a');
+  const c = st.dCopos.find(x => x.id === id);
+  $('acai-info').textContent = `Copo pronto: ${c.nome} — agora escolha o tamanho acima`;
+}
+
+function selConsumo(modo, tipo) {
+  if (modo === 'acai')  st.consumoAcai  = tipo;
+  if (modo === 'pizza') st.consumoPizza = tipo;
+  const cl = modo === 'pizza' ? 'on-p' : 'on-a';
+  $(`cb-${modo}-local`)?.classList.toggle(cl,  tipo === 'local');
+  $(`cb-${modo}-viagem`)?.classList.toggle(cl, tipo === 'viagem');
+}
+
+function addAcai() {
+  if (!st.consumoAcai) { toast('Escolha aqui ou viagem'); return; }
+
+  if (st.copoSel) {
+    if (!st.tamCopo) { toast('Escolha o tamanho do copo montado'); return; }
+    const c = st.dCopos.find(x => x.id === st.copoSel);
+    const tam = st.dTamAcai.find(t => t.id === st.tamCopo);
+    const acomps = []; let extra$ = 0;
+    st.extras.forEach(aid => {
+      const a = st.dAcomp.find(x => x.id === aid);
+      acomps.push({ acompanhamento_id: aid, tipo: 'extra', preco: a.preco_extra });
+      extra$ += parseFloat(a.preco_extra);
+    });
+    const extrasNomes = st.extras.map(aid => st.dAcomp.find(x => x.id === aid)?.nome).join(', ');
+    st.carrinho.push({
+      tipo_item: 'copo_montado', copo_montado_id: st.copoSel,
+      tamanho_acai_id: st.tamCopo,
+      acompanhamentos: acomps,
+      quantidade: 1, preco_unitario: parseFloat(tam.preco) + extra$,
+      tipo_consumo: st.consumoAcai,
+      _label: `${c.nome} (${tam.nome})`,
+      _detail: [c.descricao, extrasNomes ? `Extras: ${extrasNomes}` : ''].filter(Boolean).join(' | '),
+    });
+  } else if (st.tamAcai) {
+    const tam = st.dTamAcai.find(t => t.id === st.tamAcai);
+    const acomps = []; let extra$ = 0;
+    st.gratis.forEach(aid => acomps.push({ acompanhamento_id: aid, tipo: 'gratis', preco: 0 }));
+    st.extras.forEach(aid => {
+      const a = st.dAcomp.find(x => x.id === aid);
+      acomps.push({ acompanhamento_id: aid, tipo: 'extra', preco: a.preco_extra });
+      extra$ += parseFloat(a.preco_extra);
+    });
+    const nomes = [...st.gratis, ...st.extras].map(aid => st.dAcomp.find(x => x.id === aid)?.nome).join(', ');
+    st.carrinho.push({
+      tipo_item: 'acai', tamanho_acai_id: st.tamAcai, acompanhamentos: acomps,
+      quantidade: 1, preco_unitario: parseFloat(tam.preco) + extra$,
+      tipo_consumo: st.consumoAcai,
+      _label: `Açaí ${tam.nome}`, _detail: nomes || 'Sem acompanhamentos',
+    });
+  } else {
+    toast('Escolha um tamanho ou um copo pronto'); return;
+  }
+  badges(); toast('Adicionado ao carrinho'); resetAcai();
+}
+
+function resetAcai() {
+  st.tamAcai = null; st.copoSel = null; st.tamCopo = null; st.gratis = []; st.extras = []; st.consumoAcai = null;
+  document.querySelectorAll('[id^="ta-"],[id^="cp-"],[id^="ag-"],[id^="ae-"]')
+    .forEach(e => e.classList.remove('on-a'));
+  document.querySelectorAll('[id^="cb-acai"]').forEach(e => e.classList.remove('on-a'));
+  $('acai-info').textContent = 'Selecione um tamanho para ver quantos acompanhamentos grátis você tem';
+}
+
+// ═══════ PIZZA - RENDER (MANTIDO O MESMO ESTILO VISUAL) ═══════
+function renderTamPizza() {
+  const SZ = { P:54, M:70, G:86, GG:102 };
+  $('grid-tam-pizza').innerHTML = st.dTamPizza.map(t => {
+    const s = SZ[t.nome] || 80;
+    return `
+      <div class="sel-card" id="tp-${t.id}" onclick="selTamPizza(${t.id})" style="padding-top:18px;">
+        <div class="sel-ck">${CK}</div>
+        <div class="pz-circle" style="width:${s}px;height:${s}px;font-size:${s/3.2}px;">${t.nome}</div>
+        <div class="sc-sub">${t.descricao || ''}</div>
+        <div class="sc-price">${fmt(t.preco_base)}</div>
+      </div>`;
+  }).join('');
+}
+
+function renderSabores() {
+  const ordem = { 'Salgada': 0, 'Doce': 1 };
+  const sorted = [...st.dSabores].sort((a, b) => (ordem[a.categoria] ?? 9) - (ordem[b.categoria] ?? 9));
+  let html = '', cat = '';
+  sorted.forEach(s => {
+    if (s.categoria !== cat) { cat = s.categoria; html += `<div class="cat-label">${cat}</div>`; }
+    html += `
+      <div class="sabor-item" id="sp-${s.id}" onclick="toggleSabor(${s.id})">
+        <div class="sabor-radio" id="radio-${s.id}"></div>
+        <div>
+          <div class="sabor-nome">${s.nome}</div>
+          ${s.descricao ? `<div class="sabor-desc">${s.descricao}</div>` : ''}
+        </div>
+      </div>`;
+  });
+  $('list-sabores').innerHTML = html;
+}
+
+function renderBordas() {
+  $('grid-bordas').innerHTML = st.dBordas.map(b => `
+    <div class="sel-card" id="bp-${b.id}" onclick="selBorda(${b.id})">
+      <div class="sel-ck">${CK}</div>
+      <div class="sc-name" style="font-size:13px;">${b.nome}</div>
+      <div class="sc-price">${b.preco > 0 ? fmt(b.preco) : 'Grátis'}</div>
+    </div>`).join('');
+}
+
+function renderBebidas() {
+  let byCat = {};
+  st.dBebidas.forEach(b => {
+    if (!byCat[b.categoria]) byCat[b.categoria] = '';
+    byCat[b.categoria] += `
+      <div class="bebida-card" id="bv-${b.id}" onclick="toggleBebida(${b.id})">
+        <div class="bebida-qty" id="bvq-${b.id}" style="display:none;"></div>
+        <div class="sc-name" style="font-size:13px;">${b.nome}</div>
+        <div class="sc-sub">${b.descricao || ''}</div>
+        <div class="sc-price">${fmt(b.preco)}</div>
+      </div>`;
+  });
+  let html = '';
+  for (const [cat, cards] of Object.entries(byCat)) {
+    html += `<div class="cat-label">${cat}</div><div class="bebida-grid">${cards}</div><div style="height:4px;"></div>`;
+  }
+  $('area-bebidas').innerHTML = html;
+}
+
+// ═══════ PIZZA - SELEÇÃO (CORRIGIDO PARA MÚLTIPLOS SABORES) ═══════
+function selTamPizza(id) {
+  st.tamPizza = id;
+  // Resetar sabores selecionados ao mudar de tamanho
+  st.saboresSelecionados = [];
+  document.querySelectorAll('[id^="sp-"]').forEach(el => {
+    el.classList.remove('on-p');
+    const radio = el.querySelector('.sabor-radio');
+    if(radio) radio.classList.remove('on-p');
+  });
+  document.querySelectorAll('[id^="tp-"]').forEach(el => el.classList.remove('on-p'));
+  $(`tp-${id}`).classList.add('on-p');
+  atualizarInfoSabores();
+}
+
+function toggleSabor(id) {
+  if(!st.tamPizza) { toast('Escolha o tamanho primeiro'); return; }
+  const tam = st.dTamPizza.find(t => t.id === st.tamPizza);
+  const maxSabores = tam.max_sabores || (tam.nome === 'P' || tam.nome === 'M' ? 2 : 3);
+  const idx = st.saboresSelecionados.indexOf(id);
+  const saborItem = $(`sp-${id}`);
+  const radioDiv = saborItem.querySelector('.sabor-radio');
+  
+  if(idx === -1) {
+    if(st.saboresSelecionados.length >= maxSabores) {
+      toast(`Máximo de ${maxSabores} sabores para este tamanho!`);
+      return;
+    }
+    st.saboresSelecionados.push(id);
+    saborItem.classList.add('on-p');
+    radioDiv.classList.add('on-p');
+  } else {
+    st.saboresSelecionados.splice(idx, 1);
+    saborItem.classList.remove('on-p');
+    radioDiv.classList.remove('on-p');
+  }
+  atualizarInfoSabores();
+}
+
+function atualizarInfoSabores() {
+  const tam = st.dTamPizza.find(t => t.id === st.tamPizza);
+  if(!tam) return;
+  const maxSabores = tam.max_sabores || (tam.nome === 'P' || tam.nome === 'M' ? 2 : 3);
+  const infoDiv = document.getElementById('info-sabores');
+  if(infoDiv) {
+    infoDiv.textContent = `${st.saboresSelecionados.length} de ${maxSabores} sabores selecionados`;
+    infoDiv.style.color = st.saboresSelecionados.length === maxSabores ? '#1A8A4A' : '';
+  }
+}
+
+function selBorda(id) {
+  st.borda = id;
+  document.querySelectorAll('[id^="bp-"]').forEach(el => el.classList.remove('on-p'));
+  $(`bp-${id}`).classList.add('on-p');
+}
+
+function toggleBebida(id) {
+  if (st.bebidasPizza[id]) {
+    delete st.bebidasPizza[id];
+    $('bv-' + id).classList.remove('on-p');
+    $('bvq-' + id).style.display = 'none';
+  } else {
+    st.bebidasPizza[id] = 1;
+    $('bv-' + id).classList.add('on-p');
+    const el = $('bvq-' + id); el.style.display = 'block'; el.textContent = '1';
+  }
+  const temSuco = Object.keys(st.bebidasPizza).some(bid => {
+    const b = st.dBebidas.find(x => x.id == bid);
+    return b && b.categoria === 'Suco';
+  });
+  $('acucar-area').style.display = temSuco ? 'block' : 'none';
+  if (!temSuco) { st.acucar = null; document.querySelectorAll('[id^="cb-acucar"]').forEach(e => e.classList.remove('on-p')); }
+}
+
+function selAcucar(sim) {
+  st.acucar = sim;
+  $('cb-acucar-sim').classList.toggle('on-p', sim === true);
+  $('cb-acucar-nao').classList.toggle('on-p', sim === false);
+}
+
+// ═══════ PIZZA - ADICIONAR (CORRIGIDO) ═══════
+function addPizza() {
+  if(!st.tamPizza) { toast('Escolha o tamanho'); return; }
+  if(st.saboresSelecionados.length === 0) { toast('Escolha pelo menos 1 sabor'); return; }
+  if(!st.consumoPizza) { toast('Escolha aqui ou viagem'); return; }
+  
+  const tam = st.dTamPizza.find(t => t.id === st.tamPizza);
+  const maxSabores = tam.max_sabores || (tam.nome === 'P' || tam.nome === 'M' ? 2 : 3);
+  if(st.saboresSelecionados.length > maxSabores) { toast(`Máximo ${maxSabores} sabores`); return; }
+  
+  const sabores = st.saboresSelecionados.map(id => st.dSabores.find(s => s.id === id));
+  const borda = st.borda ? st.dBordas.find(b => b.id === st.borda) : null;
+  const preco = parseFloat(tam.preco_base) + (borda ? parseFloat(borda.preco) : 0);
+  const obs = ($('pizza-obs')?.value || '').trim();
+  const saboresNomes = sabores.map(s => s.nome).join(' + ');
+  
+  st.carrinho.push({
+    tipo_item: 'pizza',
+    tamanho_pizza_id: st.tamPizza,
+    sabores: st.saboresSelecionados.map(id => ({ id, nome: st.dSabores.find(s => s.id === id)?.nome })),
+    borda_pizza_id: st.borda || null,
+    quantidade: 1,
+    preco_unitario: preco,
+    tipo_consumo: st.consumoPizza,
+    observacoes: obs,
+    _label: `Pizza ${tam.nome} — ${saboresNomes}`,
+    _detail: [borda ? `Borda: ${borda.nome}` : '', obs].filter(Boolean).join(' | '),
+  });
+  
+  Object.keys(st.bebidasPizza).forEach(bid => {
+    const b = st.dBebidas.find(x => x.id == bid);
+    const isSuco = b?.categoria === 'Suco';
+    const acucarObs = isSuco && st.acucar !== null ? (st.acucar ? 'Com açúcar' : 'Sem açúcar') : '';
+    st.carrinho.push({
+      tipo_item: 'bebida',
+      bebida_id: parseInt(bid),
+      quantidade: st.bebidasPizza[bid],
+      preco_unitario: parseFloat(b.preco),
+      tipo_consumo: st.consumoPizza,
+      observacoes: acucarObs,
+      _label: b.nome,
+      _detail: acucarObs,
+    });
+  });
+  
+  badges();
+  toast(`🍕 Pizza adicionada! (${saboresNomes})`);
+  resetPizza();
+}
+
+function resetPizza() {
+  st.tamPizza = null;
+  st.saboresSelecionados = [];
+  st.borda = null;
+  st.bebidasPizza = {};
+  st.acucar = null;
+  st.consumoPizza = null;
+  document.querySelectorAll('[id^="tp-"],[id^="sp-"],[id^="bp-"],[id^="bv-"]').forEach(el => el.classList.remove('on-p'));
+  document.querySelectorAll('.sabor-radio').forEach(el => el.classList.remove('on-p'));
+  document.querySelectorAll('[id^="bvq-"]').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('[id^="cb-pizza"],[id^="cb-acucar"]').forEach(el => el.classList.remove('on-p'));
+  if($('pizza-obs')) $('pizza-obs').value = '';
+  if($('acucar-area')) $('acucar-area').style.display = 'none';
+  const infoDiv = document.getElementById('info-sabores');
+  if(infoDiv) infoDiv.textContent = '0 sabores selecionados';
+}
+
+// ═══════ CARRINHO ═══════
+function renderCarrinho() {
+  const empty  = $('cart-empty');
+  const list   = $('cart-list');
+  const bottom = $('cart-bottom');
+  if (!st.carrinho.length) {
+    empty.style.display = 'flex'; list.style.display = 'none'; bottom.style.display = 'none'; return;
+  }
+  empty.style.display = 'none'; list.style.display = 'flex'; bottom.style.display = 'block';
+  let total = 0;
+  list.innerHTML = st.carrinho.map((item, i) => {
+    total += (parseFloat(item.preco_unitario) || 0) * (item.quantidade || 1);
+    return `
+      <div class="cart-item">
+        <div class="cart-info">
+          <div class="ci-name">${item._label}</div>
+          ${item._detail ? `<div class="ci-detail">${item._detail}</div>` : ''}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+          <div class="ci-price">${fmt(item.preco_unitario)}</div>
+          <button class="ci-remove" onclick="remItem(${i})">
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="2" y1="2" x2="10" y2="10"/><line x1="10" y1="2" x2="2" y2="10"/></svg>
+          </button>
+        </div>
+      </div>`;
+  }).join('');
+  $('cart-total').textContent = fmt(total);
+}
+
+function remItem(i) { st.carrinho.splice(i, 1); badges(); renderCarrinho(); }
+
+// ═══════ FINALIZAR ═══════
+async function finalizarPedido() {
+  if (!st.carrinho.length) { toast('Carrinho vazio'); return; }
+  loading(true);
+  try {
+    const tipo_consumo = st.carrinho[0]?.tipo_consumo || 'local';
+    const payload = {
+      tipo: st.tipo, tipo_consumo,
+      itens: st.carrinho.map(item => {
+        const o = { tipo_item: item.tipo_item, quantidade: item.quantidade, preco_unitario: item.preco_unitario };
+        if (item.tamanho_acai_id)  o.tamanho_acai_id  = item.tamanho_acai_id;
+        if (item.acompanhamentos)  o.acompanhamentos  = item.acompanhamentos;
+        if (item.copo_montado_id)  o.copo_montado_id  = item.copo_montado_id;
+        if (item.tamanho_pizza_id) o.tamanho_pizza_id = item.tamanho_pizza_id;
+        if (item.sabores)          o.sabores          = item.sabores;
+        if (item.borda_pizza_id)   o.borda_pizza_id   = item.borda_pizza_id;
+        if (item.bebida_id)        o.bebida_id        = item.bebida_id;
+        return o;
+      }),
+    };
+    const resp = await fetch(BASE_URL + '/api/pedidos', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Erro ao finalizar');
+    $('confirm-num').textContent = data.pedido.numero_pedido;
+    st.carrinho = []; badges(); view('view-confirm');
+  } catch(e) { toast('Erro ao finalizar: ' + e.message, 5000); }
+  finally { loading(false); }
+}
+
+function reiniciar() {
+  st.tipo = null; st.carrinho = []; badges(); resetAcai(); resetPizza(); view('view-home');
+}
+
+(function() {
+  const s = document.createElement('script');
+  s.src = BASE_URL + '/socket.io/socket.io.js';
+  s.onload = () => { try { io(BASE_URL, { reconnectionAttempts: 5 }); } catch{} };
+  document.body.appendChild(s);
+})();
+</script>
+</body>
+</html>
